@@ -5,51 +5,24 @@ pwr = @(x,dim) squeeze(log10(max(abs(fftshift(x)),[],dim)))';
 p_rl = @(x,dim) squeeze(log10(max(real(fftshift(x)),[],dim)))';
 p_im = @(x,dim) squeeze(log10(max(imag(fftshift(x)),[],dim)))';
 apply = @(mask,x) fftshift(mask) .* x;
-% dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/OPM/ZoomSystem/SiliconeOil/100nmBeads/green/241105';
 
 %%
-% dataPath = '/endosome/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/PSFparade/Beads100nm/YG/240926';
-% imPath = fullfile(dataPath, 'Cell1', '1_CH00_000000.tif');
-
-% beads
-% dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/Reto/Beads/YG100/241125/';
-% imPath = fullfile(dataPath, 'Cell11', '1_CH00_000000.tif');
-
 % big beads
-% dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/Reto/Beads/YG100nm/241203';
-% imPath = fullfile(dataPath, 'Cell1', '1_CH00_000000.tif');
-
-% big beads
-dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/Retp/Beads/100nmYG/241209';
-imPath = fullfile(dataPath, 'Cell6', '1_CH00_000000.tif');
-
-% mito
-% dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/U2OS/TOMM20/241118';
-% imPath = fullfile(dataPath, 'Cell14', '1_CH00_000000.tif');
-
-% dataPath = '/endosome/archive/bioinformatics/Danuser_lab/Fiolka/LabMembers/Conor/OPMv3/Aliasing/100nm_YG';
-% imPathFull = fullfile(dataPath, '2024-09-29', 'dz_200nm_001', 'CH00_000000.tiff');
-% imPath = fullfile(dataPath, '2024-09-29', 'dz_1000nm_001', 'CH00_000000.tiff');
+dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/Calibration60X/mito/OMP/241211';
+imPath = fullfile(dataPath, 'Cell9', '1_CH00_000000.tif');
 
 %% deskewing
 
-% beads
-ovFactor = 2;
-dsFactor = 3;
+% omniOPM
+ovFactor = 1;
+dsFactor = 1;
 xyPixelSize = 0.147;
-dz = 0.210;
+dz = 0.240;
 skewAngle = 45.0;
-
-% mito
-% dsFactor = 3;
-% xyPixelSize = 0.147;
-% dz = 0.190;
-% skewAngle = 50.0;
 
 %% load, deskew and downsample image
 
 im = permute(readtiff(imPath), [2,1,3]);
-im = im(:, :, 1:ovFactor:end);
 
 im_full = im;
 im_dsp = im(:, :, 1:dsFactor:end);
@@ -61,42 +34,25 @@ fillVal = median(im_dsp(:));
 im_dsk = deskewFrame3D( ...
     im_dsp, ...
     skewAngle, ...
-    dz * dsFactor * ovFactor, ...
+    dz, ...
     xyPixelSize, ...
-    'reverse', true ...
-    );
-
-im_full = deskewFrame3D( ...
-    im_full, ...
-    skewAngle, ...
-    dz * ovFactor, ...
-    xyPixelSize, ...
-    'reverse', true ...
+    'reverse', false ...
     );
 
 % median fill:
 % im_dsk(im_dsk(:) == 0) = fillVal;
 
-%%
-x1 = find(squeeze(im_full(1,:,1)) > 0);
+x1 = find(squeeze(im_dsk(1,:,1)) > 0);
 x1 = x1(1);
 
-x2 = find(squeeze(im_full(1,:,end)) > 0);
+x2 = find(squeeze(im_dsk(1,:,end)) > 0);
 x2 = x2(end);
 
-im_full = im_full(:, (x1+1):(x2-1), :);
-im_dsk = im_dsk(:, (x1+1):(x2-1), :);
+% im_dsk = im_dsk(:, (x1+1):(x2-1), :);
 
 figure(1); clf;
 set(gcf, 'color', [1,1,1]);
-imagesc(mip(im_full, 1));
-% imagesc(rescale(squeeze(im_full(256, :, :))));
-
-figure(2); clf;
-set(gcf, 'color', [1,1,1]);
 imagesc(mip(im_dsk, 1));
-axis image;
-% title('stack (deskewed, downsampled)');
 
 %% "upsampling" downsampled stack: G
 
