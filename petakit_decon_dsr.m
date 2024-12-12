@@ -1,8 +1,23 @@
+%   Use your specific path to PetaKit5D here:
+run("/archive/bioinformatics/Danuser_lab/Fiolka/LabMembers/Conor/MATLAB/PetaKit5D/setup.m");
+
+% default dir when you first start script:
+defaultDir = "/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment";
+% defaultDir = ".";
+
+%% Microscope parameters:
+
+xyPixelSize = 0.147;
+dz = 0.240;
+dzPSF = 0.212;
+skewAngle = 45.0;
+reverse = true; % {OmniOPM: true, OPMv2: false}
+
 %% Set up data paths:
 clear dir dirs;
 
 if ~exist("rt", "var")
-    rt = ".";
+    rt = defaultDir;
 end
 
 channelPatterns = {};
@@ -10,10 +25,12 @@ dataPaths = {};
 psfFullpaths = {};
 
 while true
-    [fName, rt] = uigetfile(fullfile(rt, "*.tif*"), "Choose any stack in folder... (CANCEL to stop)");
+    [fName, fDir] = uigetfile(fullfile(rt, "*.tif*"), "Choose any stack in folder... (CANCEL to stop)");
     if ~fName
         break;
     end
+    
+    rt = fDir;
 
     if ~any(strcmp(dataPaths, rt))
         dataPaths{end+1} = rt;
@@ -50,15 +67,6 @@ doDecon = false;
 if psfName
     doDecon = true;
 end
-
-
-%% Microscope parameters:
-
-xyPixelSize = 0.147;
-dz = 0.310;
-dzPSF = 0.212;
-skewAngle = 45.0;
-reverse = true; % {OmniOPM: true, OPMv2: false}
 
 %% -------- Deconvolution parameters --------
 
@@ -116,8 +124,6 @@ if doDecon
     end
 end
 
-cd ../
-
 %% ------------- Deskew-Rotation -------------
 
 dsrDataPaths = {};
@@ -143,6 +149,3 @@ XR_deskew_rotate_data_wrapper( ...
     'parseCluster', false, ...
     'crop', true ...
     );
-
-% Go back to MATLAB folder...
-cd ../
