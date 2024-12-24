@@ -9,9 +9,10 @@ apply = @(mask,x) fftshift(mask) .* x;
 %%
 % dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/Calibration60X/mito/OMP/241211';
 % dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/Aliasing_OPM/U2OS/241211';
-dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/LabMembers/Conor/omniOPM/Reto/Aliasing_OPM/U2OS/241211';
+% dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/LabMembers/Conor/omniOPM/Reto/Aliasing_OPM/U2OS/241211';
+dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment/omniOPM/U2OS/ER-Henne-dish2/241217';
 
-cellStr = 'Cell19';
+cellStr = 'Cell1';
 
 chanToken = 'CH00';
 
@@ -20,14 +21,14 @@ tiffList = dir(fullfile(dataPath, cellStr, '*.tif*'));
 %% microscope params
 
 % omniOPM
-dsFactor = 4;
+dsFactor = 3;
 xyPixelSize = 0.147;
 dz = 0.207;
 skewAngle = 45.0;
 
 %% reconstruction params
 
-zCrop = 64;
+zCrop = 128;
 
 %% set up save folder
 
@@ -40,7 +41,7 @@ end
 
 %% loop through timepoints
 
-maxNumTimePoints = -1;
+maxNumTimePoints = 1;
 
 if maxNumTimePoints <= 0
     maxNumTimePoints = length(tiffList);
@@ -73,16 +74,18 @@ for t = 1:maxNumTimePoints
         'reverse', true ...
         );
     
-    x1 = find(squeeze(im_dsk(1,:,1)) > 0);
-    x1 = x1(1);
-    
-    x2 = find(squeeze(im_dsk(1,:,end)) > 0);
-    x2 = x2(end);
-    
-    im_dsk = im_dsk(:, (x1+1):(x2-1), :);
+    % x1 = find(squeeze(im_dsk(1,:,end)) > 0);
+    % x1 = x1(1);
+    % 
+    % x2 = find(squeeze(im_dsk(1,:,1)) > 0);
+    % x2 = x2(end);
+
+    % im_dsk = im_dsk(:, (x1+1):(x2-1), :);
     
     outSize = [size(im_dsk, [1,2]), zCrop];
     
+    im_dsk(im_dsk(:) == 0) = median(im_dsk(im_dsk(:) > 0));
+
     im_dsk_rot = rotateFrame3D( ...
         im_dsk, ...
         skewAngle, ...
@@ -97,11 +100,22 @@ for t = 1:maxNumTimePoints
 
     if display
         figure(t); clf;
-        subplot(1,4,1);
+        subplot(3,3,[2,5,8]);
         set(gcf, 'color', [1,1,1]);
-        imagesc(mip(im_dsk_rot, 1));
+        % imagesc(mip(im_dsk_rot, 1));
+        imagesc([squeeze(im_dsk_rot(:,:,48)); squeeze(im_dsk_rot(400,:,:))']);
         colormap(gca, "parula");
         axis image;
+    end
+
+    %% fft of interp
+    G_interp = fftn(im_dsk_rot);
+    
+    if display
+        subplot(3,3,7);
+        imagesc(pwr(G_interp, 1));
+        colormap(gca, "hot");
+        axis image;        
     end
 
     %% "upsampling" downsampled stack: G
@@ -116,7 +130,7 @@ for t = 1:maxNumTimePoints
     end
     
     if display
-        subplot(1,4,2);
+        subplot(3,3,1);
         imagesc(pwr(G, 1));
         colormap(gca, "hot");
         axis image;
@@ -132,8 +146,9 @@ for t = 1:maxNumTimePoints
     
     blurSize = 0.0;
     
-    th = (cosd(skewAngle)*sz + sind(skewAngle)*sx)/2 - blurSize/2;
-    mask = (z > -cosd(skewAngle).*(x + th/dsFactor));
+    alpha = skewAngle * dz/xyPixelSize;
+    th = (cosd(alpha)*sz + sind(alpha)*sx)/2 - blurSize/2;
+    mask = (z > -cosd(alpha).*(x + th/dsFactor));
     mask = mask & mask & flip(flip(mask, 3), 2);
     
     if blurSize > 0
@@ -143,7 +158,7 @@ for t = 1:maxNumTimePoints
     G_mask = fftshift(mask) .* G;
      
     if display
-        subplot(1,4,3);
+        subplot(3,3,4);
         imagesc(pwr(G_mask, 1));
         colormap(gca, "hot");
         axis image;
@@ -165,8 +180,9 @@ for t = 1:maxNumTimePoints
     im_recon_rot = norm_u16(im_recon_rot);
 
     if display
-        subplot(1,4,4);
-        imagesc(mip(im_recon_rot, 1));
+        subplot(3,3,[3,6,9]);
+        % imagesc(mip(im_recon_rot, 1));
+        imagesc([squeeze(im_recon_rot(:,:,48)); squeeze(im_recon_rot(400,:,:))']);
         colormap(gca, "parula");
         axis image;
     end
