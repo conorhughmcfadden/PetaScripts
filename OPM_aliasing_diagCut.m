@@ -14,12 +14,11 @@ apply = @(mask,x) fftshift(mask) .* x;
 dataPath = '/archive/bioinformatics/Danuser_lab/Fiolka/Manuscripts/OPM-ALIAS/DataToShare';
 
 imPath = fullfile(dataPath, 'highOPM', 'Cell1', '1_CH00_000000.tif');
-% imFullPath = fullfile(dataPath, 'Cell20', '1_CH00_000000.tif');
 
 %% deskewing
 
 % omniOPM
-dsFactor = 3;
+dsFactor = 2;
 xyPixelSize = 0.147;
 dz = 0.210;
 skewAngle = 45.0;
@@ -33,11 +32,9 @@ skewAngle = 45.0;
 %% load, deskew and downsample image
 
 im = permute(readtiff(imPath), [2,1,3]);
-% im_full = permute(readtiff(imFullPath), [2,1,3]);
 im_full = im;
 
 im_dsp = im(:, :, 1:dsFactor:end);
-% im_dsp = im;
 
 fillVal = median(im_dsp(:));
 
@@ -61,6 +58,7 @@ im_full = deskewFrame3D( ...
 % median fill:
 % im_dsk(im_dsk(:) == 0) = fillVal;
 
+% cropping
 x1 = find(squeeze(im_dsk(1,:,1)) > 0);
 x1 = x1(1);
 
@@ -70,17 +68,17 @@ x2 = x2(end);
 im_dsk = im_dsk(:, (x1+1):(x2-1), :);
 im_full = im_full(:, (x1+1):(x2-1), :);
 
-figure(1); clf;
-set(gcf, 'color', [1,1,1]);
-imagesc(mip(im_full, 1));
-axis image;
-title('Fully sampled (deskewed)');
-
-figure(2);
-set(gcf, 'color', [1,1,1]);
-imagesc(mip(im_dsk, 1));
-% imagesc(squeeze(im_dsk(512,:,:)));
-axis image;
+% figure(1); clf;
+% set(gcf, 'color', [1,1,1]);
+% imagesc(mip(im_full, 1));
+% axis image;
+% title('Fully sampled (deskewed)');
+% 
+% figure(2);
+% set(gcf, 'color', [1,1,1]);
+% imagesc(mip(im_dsk, 1));
+% % imagesc(squeeze(im_dsk(512,:,:)));
+% axis image;
 
 %% "upsampling" downsampled stack: G
 
@@ -94,7 +92,8 @@ if ~mod(dsFactor, 2)
     G_rep = cat(3, G_rep(:, :, (z_ds+1):end), G_rep(:, :, 1:z_ds));
 end
 
-figure(3); clf;
+% deskew and reciprocal space figures...
+figure(1); clf;
 set(gcf, 'color', [1,1,1]);
 
 t = tiledlayout(2, 3, 'TileSpacing', 'none', 'Padding', 'compact');
@@ -150,7 +149,6 @@ blurSize = 0.0;
 alpha = skewAngle + 3.0;
 th = (cosd(alpha)*sz + sind(alpha)*sx)/2 - blurSize/2;
 mask = (z > -cosd(alpha).*(x + th/dsFactor));
-% mask = mask | (z > 0);
 mask = mask & mask & flip(flip(mask, 3), 2);
 
 hold on;
@@ -175,7 +173,9 @@ end
 %%
 G_mask = fftshift(mask) .* G_rep;
 
-figure(4); clf; set(gcf, 'color', [1,1,1]);
+% masked G
+figure(2); clf; 
+set(gcf, 'color', [1,1,1]);
 imagesc(pwr(G_mask, 1));
 colormap hot;
 axis image;
@@ -185,9 +185,9 @@ title('G masked');
 g_recon = ifftn(G_mask);
 g_recon = real(g_recon);
 
-figure(5); clf; set(gcf, 'color', [1,1,1]);
+figure(3); clf; 
+set(gcf, 'color', [1,1,1]);
 imagesc(mip(g_recon, 1));
-% imagesc(rescale(squeeze(g_recon(256, :, :))));
 colormap parula;
 axis image;
 title('Reconstructed (deskewed)');
@@ -202,7 +202,7 @@ S = [1 0 0 0
 
 im_interp = imwarp(im_dsk, affine3d(S), "cubic");
 
-figure(6); clf;
+figure(4); clf;
 imagesc(mip(im_interp, 1));
 axis image;
 title('Interpolated (deskewed)');
@@ -220,7 +220,8 @@ im_full_rot = rotateFrame3D( ...
     );
 im_full_rot = norm_u16(im_full_rot);
 
-figure(7); clf;
+% rotated results
+figure(5); clf;
 set(gcf, 'color', [1,1,1]);
 subplot(3,1,1);
 imagesc(mip(im_full_rot, 1));

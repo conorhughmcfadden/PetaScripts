@@ -21,7 +21,7 @@ tiffList = dir(fullfile(dataPath, cellStr, '*.tif*'));
 %% microscope params
 
 % omniOPM
-dsFactor = 3;
+dsFactor = 4;
 xyPixelSize = 0.147;
 dz = 0.207;
 skewAngle = 45.0;

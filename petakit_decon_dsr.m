@@ -2,15 +2,17 @@
 run("/archive/bioinformatics/Danuser_lab/Fiolka/LabMembers/Conor/MATLAB/PetaKit5D/setup.m");
 
 % default dir when you first start script:
-defaultDir = "/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment";
+% defaultDir = "/archive/bioinformatics/Danuser_lab/Fiolka/MicroscopeDevelopment";
+defaultDir = "/archive/bioinformatics/Danuser_lab/Fiolka/LabMembers/Conor/";
+
 % defaultDir = ".";
 
 %% Microscope parameters:
 
 xyPixelSize = 0.147;
-dz = 0.240;
+dz = 0.400;
 dzPSF = 0.212;
-skewAngle = 45.0;
+skewAngle = 35.0;
 reverse = true; % {OmniOPM: true, OPMv2: false}
 
 %% Set up data paths:
@@ -42,7 +44,19 @@ while true
     fileList = dir(fullfile(rt, "*.tif*"));
     
     for i = 1:length(fileList)
-        ch = strsplit(fileList(i).name, '_');
+        fileName = fileList(i).name;
+        fileFolder = fileList(i).folder;
+        
+        % If '.tiff', permanently rename as '.tif'
+        [~, nm, ext] = fileparts(fileName);
+        if strcmp(ext, '.tiff')
+            movefile(...
+                fullfile(fileFolder, fileName),...
+                fullfile(fileFolder, [nm, '.tif'])...
+                );
+        end
+
+        ch = strsplit(fileName, '_');
         ch = ch{end-1};
         
         if ~any(strcmp(channelPatterns, ch))
